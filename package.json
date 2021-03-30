@@ -1,0 +1,26 @@
+{
+  "name": "bullet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "run": "node dist/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Joshua Stauffer",
+  "license": "ISC",
+  "dependencies": {
+    "inquirer": "^8.0.0",
+    "lowdb": "^1.0.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^7.3.1",
+    "@types/jest": "^26.0.22",
+    "@types/lowdb": "^1.0.9",
+    "@types/uuid": "^8.3.0",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.5.4"
+  }
+}
