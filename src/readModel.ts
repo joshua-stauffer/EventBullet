@@ -26,6 +26,7 @@ export interface Todo {
     timestamp: Date;
     dueDate: Date | null;
     complete: boolean;
+    timeCompleted: Date | null;
     scheduled?: Frequency;
 }
 
@@ -110,7 +111,7 @@ export class ReadModel {
 
     private handleTodoAdded = (event: Event): BrokerResponse => {
         
-        const todo = {
+        const todo: Todo = {
             GUID: event.payload.GUID,
             name: event.payload.name,
             text: event.payload.text,
@@ -118,6 +119,7 @@ export class ReadModel {
             dueDate: event.payload.dueDate ? new Date(event.payload.dueDate) : null,
             category: event.payload.category,
             complete: false,
+            timeCompleted: null,
             scheduled: Frequency.Never
         }
         this.todos.push(todo);
@@ -131,23 +133,30 @@ export class ReadModel {
         // change eventMap todo
         const e = this.eventMap.get(event.payload.GUID) as Todo;
         e.complete = true;
+        e.timeCompleted = new Date(event.timestamp);
         e.dueDate = null;
         // change todo list
         const t = this.todos.find(e => e.GUID === event.payload.GUID);
         t.complete = true;
+        t.timeCompleted = new Date(event.timestamp);
         t.dueDate = null;
 
         return BrokerResponse.Success;
     }
 
     private handleTodoMarkedIncomplete = (event: Event): BrokerResponse => {
+        // this event will be triggered even when another 'completing' action takes place
+        // i.e. handleTodoScheduled or handleTodoUpdated (a separate TodoMarkedIncomplete
+        // event must be emitted)
         
         // change eventMap todo
         const e = this.eventMap.get(event.payload.GUID) as Todo;
         e.complete = false;
+        e.timeCompleted = null;
         // change todo list
         const t = this.todos.find(e => e.GUID === event.payload.GUID);
         t.complete = false;
+        t.timeCompleted = null;
 
         return BrokerResponse.Success;
     }

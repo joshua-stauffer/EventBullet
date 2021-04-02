@@ -16,6 +16,7 @@ enum MainMenu {
     Log = "Log",
     Complete = "Complete",
     Plan = "Plan",
+    Review = "Review",
     View = "Change View Options",
     Settings = "Settings",
     Quit = "Quit"
@@ -268,6 +269,9 @@ export class Client {
 
                     case MainMenu.Plan:
                         return this.runPlanningSession();
+
+                    case MainMenu.Review:
+                        return this.runReviewSession();
 
                     case MainMenu.View:
                         return this.viewMenu();
@@ -669,6 +673,68 @@ export class Client {
 
                 return this.recurseOpenTodos(nextTodos);
             })
+        )
+    }
+
+    // review / stats
+
+    private runReviewSession = (): Promise<void> => {
+        // provides totals and an overview of todays activities
+        // TODO: would be nice to be able to use compact notation here
+        
+        console.clear();
+        this.printSpace();
+        this.printCentered('Today in Review');
+        this.printSpace(1);
+
+
+        // tasks
+        const todaysTasks = this.readSide.tasks
+            .filter(task => this.isDateToday(task.timestamp));
+        const delta = todaysTasks.reduce((sum: number, task: Task) => task.taskDelta, 0)
+        // get breakdown per category
+        const catMap = new Map<string, number>();
+        this.readSide.categories.forEach(cat => {
+            const catTasks = todaysTasks.filter(task => task.category === cat);
+            const catDelta = catTasks.reduce((sum: number, task: Task) => task.taskDelta, 0)
+            catMap.set(cat, catDelta)
+        })
+        console.log('Time Spent Per Category')
+        this.readSide.categories.forEach(cat => {
+            this.printDuration(catMap.get(cat), cat)    
+        })
+        this.printSpace();
+        this.printDuration(delta, 'Total Time: ')
+
+        // notes
+        this.printSpace();
+        this.printCentered('Today\'s Notes');
+        const todaysNotes = this.readSide.notes
+                        .filter(note => this.isDateToday(note.timestamp))
+        if (todaysNotes.length) {
+            todaysNotes.forEach(note => this.printNote(note));
+        } else {
+            this.printCentered('No Notes were made today.');
+        }               
+        
+        // todos
+        this.printSpace();
+        this.printCentered('Today\'s Todos');
+        const todosCompletedToday = this.readSide.todos
+                        .filter(todo => todo.complete)
+                        .filter(todo => this.isDateToday(todo.timeCompleted))
+        if (todosCompletedToday.length) {
+            todosCompletedToday.forEach(todo => this.printTodo(todo));
+        } else {
+            this.printCentered('No Todos were completed today.');
+        }
+        this.printSpace(2);
+                      
+        return (
+            inquirer.prompt({
+                name: "hello",
+                message: "Enter any key to continue."
+            }).then(_ => this.mainMenu())
         )
     }
 
@@ -1266,7 +1332,7 @@ export class Client {
         console.log(date.toDateString().padEnd(this.col2, ' ') + `${hours}:${minutes}`)
     }
 
-    private printDuration = (delta: number): void => {
+    private printDuration = (delta: number, title?: string): void => {
         
         const { days, hours, minutes } = this.deltaToHoursMinutes(delta);
         const dayLabel = !days ? ''
@@ -1279,7 +1345,10 @@ export class Client {
                             : minutes > 1 ? `${minutes} minutes`
                             : `${minutes} minute`;           
 
-        console.log(`Duration: ${dayLabel} ${hourLabel} ${minuteLabel}`)
+        if (title) {
+            return console.log(`${title}: ${dayLabel} ${hourLabel} ${minuteLabel}`)
+        }
+        return console.log(`Duration: ${dayLabel} ${hourLabel} ${minuteLabel}`)
     }
 
     private printDueDateStatus = (date: Date | null, isComplete=false): void => {
